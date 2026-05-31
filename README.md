@@ -1,7 +1,9 @@
 # Annotating proteins based on their sequence
 
-Altough thousands of proteins have been identified in the last decades, for many of them the function remains unclear. Luckily there are numerous tools out there that can help us infer such functions based on simple input data (accession numbers or sequences). However the problem is the limited set of tools allowing us to query all these resources simultaneously. Therefore we aimed to group some of these resources into a pipeline which only requires a protein sequence (in FASTA format) as input and delivers a nice html file as output.
+Although thousands of proteins have been identified in the last decades, for many of them the function remains unclear. Luckily there are numerous tools out there that can help us infer such functions based on simple input data (accession numbers or sequences). However the problem is the limited set of tools allowing us to query all these resources simultaneously. Therefore we aimed to group some of these resources into a pipeline which only requires a protein sequence (in FASTA format) as input and delivers a nice html file as output.
 
+
+This was a bioinformatics course project at HAN University of Applied Sciences, written with Rick Beeloo, who wrote most of the pipeline.
 
 ## Getting Started
 ### Requirements
@@ -12,8 +14,8 @@ Altough thousands of proteins have been identified in the last decades, for many
 ### Steps
 **1.Clone this repository**
  ```bash
-git clone https://github.com/koenvdheide/snakemake.git 
-cd snakemake
+git clone https://github.com/koenvdheide/protein-annotation-pipeline.git
+cd protein-annotation-pipeline
 ```
 **2.Create & activate the conda environment**
  ```bash
@@ -23,7 +25,7 @@ source activate pipeline
 
 **3. Run the pipeline!**
  ```bash
-Snakemake
+snakemake
 ```
 ## The config file (config.yaml)
 This contains several parameters that can be adjusted by the user, such as `e-value cut-off` , `blast database`, `mail address`, etc. Besides the mail address the parameters do not have to be changed, but of course can be changed whenever preferred (the parameters will be saved to be able to differentiate runs). 
@@ -37,8 +39,8 @@ We use several web resources to annotate your protein of interest. The steps (an
 We have provided an example sequence (see `example/sequence.fasta`) and an example output of this sequence (see `example/results.html`). 
 
 
-## @Martijn
-We used different approaches to retrieve information form webservices, with all having their own problems. But these also shared a common problem, whenever the web service is down your pipeline is dead as well `;)`. 
+## How the web services are queried
+We used several approaches to retrieve information from web services, each with its own problems. They also share a common problem: when a web service is down, the pipeline cannot complete.
 
  **Client code**:
  
@@ -54,32 +56,32 @@ We used several of these:
 
  **NCBI Pipe**:
  
- A little more advanced client is NCBI entrez direct, which you can use to pipe data from one NCBI webservice to another quite easily. We preferred to parse the data directly using an XML expression rather then saving the data first and processing it afterwards. Spreading downloading and post-processing over two separate rules would be perfectly fine in our opinion when each rule has sufficient body on its own. However post-processing in this case could been done in a single line. Hence, adding another rule would make the flow unnecessary more complicated to follow (and we learned something about XML parsing!!!)
+ A little more advanced client is NCBI entrez direct, which you can use to pipe data from one NCBI webservice to another quite easily. We preferred to parse the data directly using an XML expression rather than saving the data first and processing it afterwards. Spreading downloading and post-processing over two separate rules would be perfectly fine when each rule has sufficient body on its own. However post-processing in this case could be done in a single line, so adding another rule would make the flow unnecessarily more complicated to follow.
  
 * [Entrez Direct](https://www.ncbi.nlm.nih.gov/books/NBK179288/) 
     * To link a gene database query to a pubmed query  --> parsing using an XML expression (see code for further detail)
 
 **WGET requests:**
 
-Of course a webservice does not always provide a client code. Therefore we also wanted to practice data retrieval using `wget`. The hard part about this is that we preferably want to call the URL directly without pre-processing of the data. However nearly all webservices have their own way of seperating terms in the url, such as `<space>`, `+`, ` OR `, etc. Therefore we wrote a script (`formatter.py` ) which sperates query terms by a given separator. Now we could simply format the data in one single line and send the request in another one, such as:
+Of course a webservice does not always provide a client code. Therefore we also wanted to practice data retrieval using `wget`. The hard part about this is that we preferably want to call the URL directly without pre-processing of the data. However nearly all webservices have their own way of separating terms in the url, such as `<space>`, `+`, ` OR `, etc. Therefore we wrote a script (`formatter.py` ) which separates query terms by a given separator. Now we could simply format the data in one single line and send the request in another one, such as:
 ```bash
 query=$(python3 scripts/formatter.py {input} '+OR+' q)
 wget "http://www.uniprot.org/uniprot/?query=$query...
 ```
 Now its directly clear that we send a request to the above URL, which would not be the case when we would cover this all up in a Python script and calling it like so:
 ```bash
-Python query_uniprot.py 
+python3 query_uniprot.py
 ```
 We used `wget` request in the following cases:
 * [UniProt API](https://www.ebi.ac.uk/seqdb/confluence/pages/viewpage.action?pageId=54652414):
     * Annotation --> tab delimited retrieval
     * Sequences --> FASTA retrieval
-* [STRING API](http://version10.string-db.org/help/api/):
+* [STRING API](https://string-db.org/help/api/):
     * Network --> image retrieval
 
 **CURL requests:**
 
-`wget` is particularly useful when copying remote files to a local one. This fitted our needs in the case of UniProt and STRING, however in the case of KEGG we wanted to process the data directly without saving it to a file first. Again because the post-processing is rather simple (code wise). Additionally, it would be quite useless and inefficient to save whole KEGG entries when we only use very specific information from it (and leave the rest untouched). This is were `curl` comes in handy, as this directs the returned page to `stdout`, and hence making piping easier. In this case we piped the retrieved KEGG entries in `json` format to an `jr` expression we wrote. Resulting in a tab-delimited file containing solely the information we were interested in. 
+`wget` is particularly useful when copying remote files to a local one. This fitted our needs in the case of UniProt and STRING, however in the case of KEGG we wanted to process the data directly without saving it to a file first. Again because the post-processing is rather simple (code wise). Additionally, it would be quite useless and inefficient to save whole KEGG entries when we only use very specific information from it (and leave the rest untouched). This is were `curl` comes in handy, as this directs the returned page to `stdout`, and hence making piping easier. In this case we piped the retrieved KEGG entries in `json` format to a `jq` expression we wrote. Resulting in a tab-delimited file containing solely the information we were interested in.
 
 * [TOGOWS API](http://togows.org/):
     * KEGG annotation --> json parsing --> tab delimited data
@@ -95,14 +97,14 @@ All the other scripts basically function as bridges between web services, except
 
 **What about the biology?:**
 
-The aspects are not covered in this GitHub repository, these are mentioned thoroughly in the output of the pipeline. Please see `examples/results.html` for such an example. 
+The aspects are not covered in this GitHub repository, these are mentioned thoroughly in the output of the pipeline. Please see `example/results.html` for such an example.
 
 
 ## Authors
 
-* **Rick Beeloo** - *r.beeloo@outlook.com*
-* **Koen van der Heide** - *koen_van_der_heide@hotmail.com*
+* **Rick Beeloo** - [@rickbeeloo](https://github.com/rickbeeloo)
+* **Koen van der Heide** - [@koenvdheide](https://github.com/koenvdheide)
 
 ## Acknowledgments
 
-* Martijn van der bruggen for his enthusiasm and encouragement
+* Martijn van der Bruggen for his enthusiasm and encouragement
