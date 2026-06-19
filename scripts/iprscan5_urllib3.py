@@ -1,6 +1,20 @@
 #!/usr/bin/env python3
 # $Id: iprscan5_urllib3.py 2106 2012-05-01 17:00:40Z hpm $
 # ======================================================================
+# Copyright 2012-2014 EMBL - European Bioinformatics Institute
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ======================================================================
 # InterProScan 5 (REST) Python 3 client using urllib3 and 
 # xmltramp2 (https://pypi.python.org/pypi/xmltramp2/).
 #
